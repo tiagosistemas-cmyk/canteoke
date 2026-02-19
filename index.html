@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CANTEOKE</title>
+
+<style>
+:root{
+  --bg0:#000;
+  --bg1:#060616;
+  --bg2:#0a1026;
+  --cyan:#00f7ff;
+  --cyan2:#00f7ff55;
+  --green:#25D366;
+  --gold:#ffcc00;
+  --card:#111;
+}
+
+body{
+  margin:0;
+  padding:15px;
+  font-family: Arial, sans-serif;
+  color:#fff;
+
+  /* Gradiente "karaokê pro" (não consegui ler o CSS do site direto, mas esta paleta replica bem o estilo) */
+  background:
+    radial-gradient(1200px 600px at 50% -10%, var(--bg2), transparent 60%),
+    radial-gradient(900px 500px at 10% 20%, #0b0b1e, transparent 65%),
+    radial-gradient(900px 500px at 90% 25%, #07071a, transparent 65%),
+    linear-gradient(180deg, var(--bg1), var(--bg0));
+}
+
+/* ===== LOGO (SVG + glow + reflexo) ===== */
+
+.logo{
+  text-align:center;
+  margin: 8px 0 18px 0;
+}
+
+.logo a{
+  display:inline-block;
+  text-decoration:none;
+}
+
+.logo-wrap{
+  display:inline-block;
+  padding:14px 16px;
+  border-radius:20px;
+
+  background: linear-gradient(145deg, rgba(14,18,40,.85), rgba(6,6,18,.85));
+  border: 1px solid rgba(0,247,255,.22);
+
+  box-shadow:
+    0 0 16px rgba(0,247,255,.35),
+    0 0 40px rgba(0,247,255,.12),
+    inset 0 0 18px rgba(0,247,255,.10);
+
+  animation: logoPulse 3.2s ease-in-out infinite;
+  transform-origin:center;
+}
+
+.logo-svg{
+  width:min(320px, 92vw);
+  height:auto;
+  display:block;
+}
+
+@keyframes logoPulse{
+  0%{
+    box-shadow:
+      0 0 14px rgba(0,247,255,.30),
+      0 0 34px rgba(0,247,255,.10),
+      inset 0 0 16px rgba(0,247,255,.08);
+    transform: translateY(0);
+  }
+  50%{
+    box-shadow:
+      0 0 22px rgba(0,247,255,.45),
+      0 0 60px rgba(0,247,255,.18),
+      inset 0 0 18px rgba(0,247,255,.14);
+    transform: translateY(-1px);
+  }
+  100%{
+    box-shadow:
+      0 0 14px rgba(0,247,255,.30),
+      0 0 34px rgba(0,247,255,.10),
+      inset 0 0 16px rgba(0,247,255,.08);
+    transform: translateY(0);
+  }
+}
+
+/* ===== BUSCA + CONTADORES ===== */
+
+input{
+  width:100%;
+  padding:15px;
+  font-size:18px;
+  border-radius:12px;
+  border:none;
+  outline:none;
+  background: #0f0f14;
+  color:#fff;
+  box-shadow: 0 0 10px rgba(0,247,255,.35);
+}
+
+.contadores{
+  margin-top:10px;
+  margin-bottom:10px;
+  font-size:14px;
+  color: var(--cyan);
+}
+
+/* ===== LISTAS ===== */
+
+.resultado{
+  background: var(--card);
+  margin-top:10px;
+  padding:12px;
+  border-radius:12px;
+  box-shadow: 0 0 10px rgba(0,247,255,.12);
+}
+
+.linha-topo{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+}
+
+.info-musica{
+  flex:1;
+  min-width:0;
+}
+
+.codigo{
+  font-weight:bold;
+  color: var(--cyan);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.artista{
+  font-size:14px;
+  color:#a9a9b3;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.acoes{
+  display:flex;
+  gap:14px;
+  align-items:center;
+  flex-shrink:0;
+}
+
+/* ⭐ Favorito animado */
+.star{
+  font-size:26px;
+  cursor:pointer;
+  transition: transform .15s ease;
+  user-select:none;
+}
+.star:active{ transform: scale(.92); }
+.star.off{ color:#fff; opacity:.9; }
+.star.on{
+  color: var(--gold);
+  text-shadow: 0 0 6px rgba(255,204,0,.7), 0 0 18px rgba(255,204,0,.45);
+  animation: starPulse 1.5s infinite alternate;
+}
+@keyframes starPulse{
+  from{ transform: scale(1); text-shadow:0 0 6px rgba(255,204,0,.65); }
+  to{ transform: scale(1.18); text-shadow:0 0 22px rgba(255,204,0,.80); }
+}
+
+/* 🟢 WhatsApp neon pulsante */
+.icon{
+  width:26px;
+  cursor:pointer;
+  animation: neonPulse 1.5s infinite alternate;
+}
+@keyframes neonPulse{
+  from{
+    filter:
+      drop-shadow(0 0 3px rgba(37,211,102,.75))
+      drop-shadow(0 0 6px rgba(37,211,102,.35));
+    transform:scale(1);
+  }
+  to{
+    filter:
+      drop-shadow(0 0 10px rgba(37,211,102,.95))
+      drop-shadow(0 0 22px rgba(37,211,102,.55));
+    transform:scale(1.15);
+  }
+}
+
+/* Favoritos */
+.favoritos-area{ margin-top:25px; }
+
+.fav-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:10px;
+}
+
+.fav-title{
+  font-size:18px;
+  font-weight:bold;
+  color: var(--gold);
+}
+
+.fav-tools{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+select, .btn{
+  background:#0f0f14;
+  color:#fff;
+  border:1px solid rgba(0,247,255,.25);
+  border-radius:12px;
+  padding:10px 12px;
+  font-size:14px;
+  outline:none;
+  box-shadow:0 0 10px rgba(0,247,255,.10);
+}
+
+.btn{ cursor:pointer; white-space:nowrap; }
+.btn:hover{ box-shadow:0 0 14px rgba(0,247,255,.22); }
+
+.btn-danger{
+  border-color: rgba(255,68,68,.28);
+  box-shadow:0 0 10px rgba(255,68,68,.10);
+}
+.btn-danger:hover{ box-shadow:0 0 16px rgba(255,68,68,.22); }
+
+.small-hint{
+  color:#9aa;
+  font-size:12px;
+  margin-top:6px;
+}
+
+/* Mobile */
+@media(max-width:700px){
+  .icon{ width:24px; }
+  .star{ font-size:24px; }
+  select, .btn{ padding:10px; }
+}
+
+.logo-container{
+  text-align:center;
+  margin-bottom:20px;
+  animation: logoPulse 3s infinite alternate;
+}
+
+.logo-svg{
+  width:100%;
+  max-width:800px;
+  display:block;
+  margin:auto;
+}
+
+@keyframes logoPulse{
+  from{ filter:drop-shadow(0 0 10px #00ff88); }
+  to{ filter:drop-shadow(0 0 25px #00ff88); }
+}
+
+</style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00f7ff">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+</head>
+
+<body>
+
+
+<div class="logo">
+  <a href="https://canteoke.online" target="_blank">
+    <div class="logo-container">
+
+      <svg viewBox="0 0 900 260" class="logo-svg" xmlns="http://www.w3.org/2000/svg">
+
+        <defs>
+          <filter id="neonGlow">
+            <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- Fundo Glow -->
+        <rect x="0" y="0" width="900" height="260" fill="black"/>
+        <rect x="0" y="0" width="900" height="260" fill="#00ff88" opacity="0.15" filter="url(#neonGlow)"/>
+
+        <!-- Texto Principal -->
+        <text x="60" y="160"
+              font-size="140"
+              font-family="Arial Black, Impact, sans-serif"
+              fill="#FFD400"
+              stroke="#2A0066"
+              stroke-width="10"
+              filter="url(#neonGlow)">
+              Canteoke
+        </text>
+
+        <!-- Subtítulo -->
+        <text x="520" y="210"
+              font-size="45"
+              font-family="Arial, sans-serif"
+              fill="#00ffcc"
+              font-weight="bold">
+              LOCAÇÃO DE KARAOKÊ
+        </text>
+
+        <!-- Microfone estilizado -->
+        <g transform="translate(430,40) rotate(20)">
+            <rect x="0" y="60" width="30" height="120" fill="#222"/>
+            <ellipse cx="15" cy="50" rx="40" ry="45" fill="#333"/>
+            <ellipse cx="15" cy="50" rx="40" ry="45" fill="none" stroke="#aaa" stroke-width="3"/>
+        </g>
+
+      </svg>
+
+    </div>
+  </a>
+</div>
+
+
+<div id="resultados"></div>
+
+<div class="favoritos-area">
+  <div class="fav-header">
+    <div class="fav-title" id="favTitulo">⭐ Favoritos</div>
+
+    <div class="fav-tools">
+      <select id="ordemFav" title="Ordenar favoritos">
+        <option value="recentes">Recentes</option>
+        <option value="codigo">Código</option>
+        <option value="artista">Artista</option>
+        <option value="musica">Música</option>
+      </select>
+
+      <button class="btn btn-danger" id="limparFav" title="Remover todos os favoritos">
+        Limpar todos
+      </button>
+    </div>
+  </div>
+
+  <div class="small-hint">Dica: clique na ⭐ para remover do favorito.</div>
+
+  <div id="favoritos"></div>
+</div>
+
+<script>
+let musicas = [];
+let favoritos = JSON.parse(localStorage.getItem("favoritos")) || [];
+let favoritosMeta = JSON.parse(localStorage.getItem("favoritos_meta")) || {}; // {codigo: ts}
+
+fetch("musicas.json")
+.then(r => r.json())
+.then(data => {
+  musicas = data;
+  document.getElementById("contadorBase").innerText =
+    musicas.length.toLocaleString() + " músicas na base";
+  atualizarContadorFavoritos();
+  mostrarFavoritos();
+});
+
+function salvarFavoritos(){
+  localStorage.setItem("favoritos", JSON.stringify(favoritos));
+  localStorage.setItem("favoritos_meta", JSON.stringify(favoritosMeta));
+}
+
+function atualizarContadorFavoritos(){
+  const n = favoritos.length;
+  document.getElementById("contadorFavoritos").innerText =
+    "⭐ " + n.toLocaleString() + " favoritos salvos";
+  document.getElementById("favTitulo").innerText =
+    "⭐ Favoritos (" + n.toLocaleString() + ")";
+}
+
+function ehFavorito(codigo){
+  return favoritos.some(f => f.codigo === codigo);
+}
+
+function toggleFavorito(m){
+  const idx = favoritos.findIndex(f => f.codigo === m.codigo);
+  if(idx >= 0){
+    favoritos.splice(idx, 1);
+    delete favoritosMeta[m.codigo];
+  }else{
+    favoritos.push(m);
+    favoritosMeta[m.codigo] = Date.now();
+  }
+
+  salvarFavoritos();
+  atualizarContadorFavoritos();
+  mostrarFavoritos();
+
+  // Atualiza também a lista de resultados (estrela)
+  document.getElementById("busca").dispatchEvent(new Event("input"));
+}
+
+function normalizar(txt){
+  return String(txt || "").toLowerCase().trim();
+}
+
+function ordenarFavoritos(lista){
+  const modo = document.getElementById("ordemFav").value;
+  const arr = [...lista];
+
+  if(modo === "recentes"){
+    arr.sort((a,b) => (favoritosMeta[b.codigo] || 0) - (favoritosMeta[a.codigo] || 0));
+    return arr;
+  }
+
+  arr.sort((a,b) => {
+    const va = normalizar(a[modo]);
+    const vb = normalizar(b[modo]);
+    if(va < vb) return -1;
+    if(va > vb) return 1;
+    return String(a.codigo).localeCompare(String(b.codigo));
+  });
+
+  return arr;
+}
+
+function escapeJS(s){
+  return String(s || "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("'", "\\'")
+    .replaceAll("\n", " ")
+    .replaceAll("\r", " ");
+}
+
+function cardHTML(m){
+  const texto = m.codigo + " - " + m.artista + " - " + m.musica;
+  const link = "https://api.whatsapp.com/send?text=" + encodeURIComponent(texto);
+  const starClass = ehFavorito(m.codigo) ? "star on" : "star off";
+
+  return `
+  <div class="resultado">
+    <div class="linha-topo">
+      <div class="info-musica">
+        <div class="codigo">${m.codigo} - ${m.musica}</div>
+        <div class="artista">${m.artista}</div>
+      </div>
+      <div class="acoes">
+        <span class="${starClass}"
+          onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}'})">★</span>
+        <a href="${link}" target="_blank" aria-label="Enviar no WhatsApp">
+          <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="icon" />
+        </a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function mostrarFavoritos(){
+  const div = document.getElementById("favoritos");
+  div.innerHTML = "";
+
+  if(favoritos.length === 0){
+    div.innerHTML = `
+      <div class="resultado">
+        <div class="codigo">Nenhum favorito ainda.</div>
+        <div class="artista">Pesquise uma música e clique na ⭐ para salvar.</div>
+      </div>`;
+    return;
+  }
+
+  const lista = ordenarFavoritos(favoritos);
+  lista.forEach(m => div.innerHTML += cardHTML(m));
+}
+
+// Busca (não mostra tudo de uma vez)
+document.getElementById("busca").addEventListener("input", function(){
+  const termo = this.value.toLowerCase();
+  const div = document.getElementById("resultados");
+
+  if(termo.length < 1){
+    div.innerHTML = "";
+    document.getElementById("contadorResultado").innerText = "";
+    return;
+  }
+
+  const encontrados = musicas.filter(m =>
+    String(m.codigo || "").toLowerCase().includes(termo) ||
+    String(m.musica || "").toLowerCase().includes(termo) ||
+    String(m.artista || "").toLowerCase().includes(termo)
+  ).slice(0, 50);
+
+  document.getElementById("contadorResultado").innerText =
+    "🔎 " + encontrados.length.toLocaleString() + " encontradas";
+
+  div.innerHTML = "";
+  encontrados.forEach(m => div.innerHTML += cardHTML(m));
+});
+
+document.getElementById("ordemFav").addEventListener("change", mostrarFavoritos);
+
+document.getElementById("limparFav").addEventListener("click", function(){
+  const ok = confirm("Remover TODOS os favoritos?");
+  if(!ok) return;
+
+  favoritos = [];
+  favoritosMeta = {};
+  salvarFavoritos();
+  atualizarContadorFavoritos();
+  mostrarFavoritos();
+
+  document.getElementById("busca").dispatchEvent(new Event("input"));
+});
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>
