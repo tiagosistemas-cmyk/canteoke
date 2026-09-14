@@ -388,11 +388,16 @@ function escapeJS(s){
       .replaceAll("\r", " ");
 }
 
-// Busca otimizada - mostra TODOS os resultados encontrados
+// Busca ultrafluida - mantém TODOS os resultados, sem travar a digitação
 let timerBusca = null;
+let buscaVersao = 0;
 
 document.getElementById("busca").addEventListener("input", function(){
     clearTimeout(timerBusca);
+
+    // Cada nova tecla invalida qualquer renderização anterior que ainda esteja ocorrendo.
+    buscaVersao++;
+    const minhaVersao = buscaVersao;
 
     const termo = normalizar(this.value);
     const div = document.getElementById("resultados");
@@ -403,14 +408,28 @@ document.getElementById("busca").addEventListener("input", function(){
         return;
     }
 
+    // Evita montar milhares de cards enquanto o usuário ainda digitou só 1 ou 2 caracteres.
+    if(termo.length < 3){
+        div.innerHTML = "";
+        document.getElementById("contadorResultado").innerText =
+            "🔎 Continue digitando (mínimo 3 caracteres)";
+        return;
+    }
+
+    // Aguarda uma pequena pausa da digitação antes de pesquisar/renderizar.
     timerBusca = setTimeout(() => {
+        if(minhaVersao !== buscaVersao) return;
+
         const encontrados = [];
 
+        // A busca continua percorrendo toda a base, portanto o total é completo.
         for(const m of musicas){
             if(m._busca.includes(termo)){
                 encontrados.push(m);
             }
         }
+
+        if(minhaVersao !== buscaVersao) return;
 
         document.getElementById("contadorResultado").innerText =
             "🔎 " + encontrados.length.toLocaleString() + " encontradas";
@@ -420,35 +439,57 @@ document.getElementById("busca").addEventListener("input", function(){
             return;
         }
 
-        const htmlResultados = encontrados.map(m => {
-            const texto = m.codigo + " - " + m.artista + " - " + m.musica;
-            const link = "https://api.whatsapp.com/send?text=" + encodeURIComponent(texto);
-            const starClass = ehFavorito(m.codigo) ? "star on" : "star off";
+        div.innerHTML = "";
 
-            return `
-            <div class="resultado">
-                <div class="linha-topo">
-                    <div class="info-musica">
-                        <div class="codigo">${m.codigo} - ${m.musica}</div>
-                        <div class="artista">${m.artista}</div>
-                        ${m.inicio ? `<div class="inicio-letra">${m.inicio}</div>` : ""}
+        // Renderiza em lotes para não bloquear o campo de digitação.
+        const TAMANHO_LOTE = 100;
+        let posicao = 0;
+
+        function renderizarProximoLote(){
+            if(minhaVersao !== buscaVersao) return;
+
+            const fim = Math.min(posicao + TAMANHO_LOTE, encontrados.length);
+            let htmlLote = "";
+
+            for(let i = posicao; i < fim; i++){
+                const m = encontrados[i];
+                const texto = m.codigo + " - " + m.artista + " - " + m.musica;
+                const link = "https://api.whatsapp.com/send?text=" + encodeURIComponent(texto);
+                const starClass = ehFavorito(m.codigo) ? "star on" : "star off";
+
+                htmlLote += `
+                <div class="resultado">
+                    <div class="linha-topo">
+                        <div class="info-musica">
+                            <div class="codigo">${m.codigo} - ${m.musica}</div>
+                            <div class="artista">${m.artista}</div>
+                            ${m.inicio ? `<div class="inicio-letra">${m.inicio}</div>` : ""}
+                        </div>
+
+                        <div class="acoes">
+                            <span class="${starClass}"
+                                onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}',inicio:'${escapeJS(m.inicio || "")}'})">★</span>
+
+                            <a href="${link}" target="_blank" aria-label="Enviar no WhatsApp">
+                                <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="icon">
+                            </a>
+                        </div>
                     </div>
+                </div>`;
+            }
 
-                    <div class="acoes">
-                        <span class="${starClass}"
-                            onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}',inicio:'${escapeJS(m.inicio || "")}'})">★</span>
+            div.insertAdjacentHTML("beforeend", htmlLote);
+            posicao = fim;
 
-                        <a href="${link}" target="_blank" aria-label="Enviar no WhatsApp">
-                            <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="icon">
-                        </a>
-                    </div>
-                </div>
-            </div>`;
-        }).join("");
+            if(posicao < encontrados.length && minhaVersao === buscaVersao){
+                // Dá tempo ao navegador para respirar entre um lote e outro.
+                requestAnimationFrame(renderizarProximoLote);
+            }
+        }
 
-        div.innerHTML = htmlResultados;
+        requestAnimationFrame(renderizarProximoLote);
 
-    }, 70);
+    }, 220);
 });
 
 // Ordenação de favoritos (UI)
