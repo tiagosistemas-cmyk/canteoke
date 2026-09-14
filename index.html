@@ -87,6 +87,24 @@ input{
     flex-shrink:0;
 }
 
+
+.inicio-letra{
+    margin-top:5px;
+    font-size:13px;
+    color:#8fffea;
+    font-style:italic;
+    line-height:1.35;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    opacity:.9;
+}
+
+.inicio-letra::before{
+    content:"♪ ";
+    color:#00f7ff;
+    font-style:normal;
+}
+
 /* STAR ANIMATION */
 .star{
     font-size:26px;
@@ -243,6 +261,15 @@ fetch("musicas.json")
 .then(r => r.json())
 .then(data => {
     musicas = data;
+
+    // Atualiza favoritos antigos com os dados mais recentes do musicas.json,
+    // inclusive o campo "inicio", sem apagar os favoritos já salvos.
+    favoritos = favoritos.map(f => {
+        const atual = musicas.find(m => String(m.codigo) === String(f.codigo));
+        return atual ? {...f, ...atual} : f;
+    });
+    salvarFavoritos();
+
     document.getElementById("contadorBase").innerText = musicas.length.toLocaleString() + " músicas na base";
     atualizarContadorFavoritos();
     mostrarFavoritos();
@@ -329,11 +356,12 @@ function mostrarFavoritos(){
                 <div class="info-musica">
                     <div class="codigo">${m.codigo} - ${m.musica}</div>
                     <div class="artista">${m.artista}</div>
+                    ${m.inicio ? `<div class="inicio-letra">${m.inicio}</div>` : ""}
                 </div>
 
                 <div class="acoes">
                     <span class="${starClass}"
-                        onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}'})">★</span>
+                        onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}',inicio:'${escapeJS(m.inicio || "")}'})">★</span>
 
                     <a href="${link}" target="_blank" aria-label="Enviar no WhatsApp">
                         <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="icon">
@@ -386,11 +414,12 @@ document.getElementById("busca").addEventListener("input", function(){
                 <div class="info-musica">
                     <div class="codigo">${m.codigo} - ${m.musica}</div>
                     <div class="artista">${m.artista}</div>
+                    ${m.inicio ? `<div class="inicio-letra">${m.inicio}</div>` : ""}
                 </div>
 
                 <div class="acoes">
                     <span class="${starClass}"
-                        onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}'})">★</span>
+                        onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}',inicio:'${escapeJS(m.inicio || "")}'})">★</span>
 
                     <a href="${link}" target="_blank" aria-label="Enviar no WhatsApp">
                         <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="icon">
