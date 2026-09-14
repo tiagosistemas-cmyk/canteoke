@@ -260,7 +260,14 @@ let favoritosMeta = JSON.parse(localStorage.getItem("favoritos_meta")) || {}; //
 fetch("musicas.json")
 .then(r => r.json())
 .then(data => {
-    musicas = data;
+    // Pré-indexa os textos de busca uma única vez.
+    // Isso deixa a digitação mais fluida sem limitar a quantidade de resultados.
+    musicas = data.map(m => ({
+        ...m,
+        _busca: normalizar(
+            `${m.codigo || ""} ${m.musica || ""} ${m.artista || ""} ${m.inicio || ""}`
+        )
+    }));
 
     // Atualiza favoritos antigos com os dados mais recentes do musicas.json,
     // inclusive o campo "inicio", sem apagar os favoritos já salvos.
@@ -381,53 +388,67 @@ function escapeJS(s){
       .replaceAll("\r", " ");
 }
 
-// Busca (não mostra tudo de uma vez)
+// Busca otimizada - mostra TODOS os resultados encontrados
+let timerBusca = null;
+
 document.getElementById("busca").addEventListener("input", function(){
-    const termo = this.value.toLowerCase();
+    clearTimeout(timerBusca);
+
+    const termo = normalizar(this.value);
     const div = document.getElementById("resultados");
 
-    if(termo.length < 1){
+    if(!termo){
         div.innerHTML = "";
         document.getElementById("contadorResultado").innerText = "";
         return;
     }
 
-    const encontrados = musicas.filter(m =>
-        String(m.codigo || "").toLowerCase().includes(termo) ||
-        String(m.musica || "").toLowerCase().includes(termo) ||
-        String(m.artista || "").toLowerCase().includes(termo)
-    ).slice(0, 50);
+    timerBusca = setTimeout(() => {
+        const encontrados = [];
 
-    document.getElementById("contadorResultado").innerText =
-        "🔎 " + encontrados.length.toLocaleString() + " encontradas";
+        for(const m of musicas){
+            if(m._busca.includes(termo)){
+                encontrados.push(m);
+            }
+        }
 
-    div.innerHTML = "";
+        document.getElementById("contadorResultado").innerText =
+            "🔎 " + encontrados.length.toLocaleString() + " encontradas";
 
-    encontrados.forEach(m => {
-        const texto = m.codigo + " - " + m.artista + " - " + m.musica;
-        const link = "https://api.whatsapp.com/send?text=" + encodeURIComponent(texto);
-        const starClass = ehFavorito(m.codigo) ? "star on" : "star off";
+        if(encontrados.length === 0){
+            div.innerHTML = `<div class="resultado"><div class="codigo">Nenhuma música encontrada.</div></div>`;
+            return;
+        }
 
-        div.innerHTML += `
-        <div class="resultado">
-            <div class="linha-topo">
-                <div class="info-musica">
-                    <div class="codigo">${m.codigo} - ${m.musica}</div>
-                    <div class="artista">${m.artista}</div>
-                    ${m.inicio ? `<div class="inicio-letra">${m.inicio}</div>` : ""}
+        const htmlResultados = encontrados.map(m => {
+            const texto = m.codigo + " - " + m.artista + " - " + m.musica;
+            const link = "https://api.whatsapp.com/send?text=" + encodeURIComponent(texto);
+            const starClass = ehFavorito(m.codigo) ? "star on" : "star off";
+
+            return `
+            <div class="resultado">
+                <div class="linha-topo">
+                    <div class="info-musica">
+                        <div class="codigo">${m.codigo} - ${m.musica}</div>
+                        <div class="artista">${m.artista}</div>
+                        ${m.inicio ? `<div class="inicio-letra">${m.inicio}</div>` : ""}
+                    </div>
+
+                    <div class="acoes">
+                        <span class="${starClass}"
+                            onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}',inicio:'${escapeJS(m.inicio || "")}'})">★</span>
+
+                        <a href="${link}" target="_blank" aria-label="Enviar no WhatsApp">
+                            <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="icon">
+                        </a>
+                    </div>
                 </div>
+            </div>`;
+        }).join("");
 
-                <div class="acoes">
-                    <span class="${starClass}"
-                        onclick="toggleFavorito({codigo:'${m.codigo}',artista:'${escapeJS(m.artista)}',musica:'${escapeJS(m.musica)}',inicio:'${escapeJS(m.inicio || "")}'})">★</span>
+        div.innerHTML = htmlResultados;
 
-                    <a href="${link}" target="_blank" aria-label="Enviar no WhatsApp">
-                        <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="icon">
-                    </a>
-                </div>
-            </div>
-        </div>`;
-    });
+    }, 70);
 });
 
 // Ordenação de favoritos (UI)
